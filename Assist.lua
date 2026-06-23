@@ -19,17 +19,17 @@ pcall(function()
     setfflag("DFIntTaskSchedulerTargetFps", "2000")
     
     -- Skybox & Environment Material Strippers (Gray/Flat Sky Target)
-    setfflag("FFlagDebugGraphicsDisableLighting", "True")      -- Shuts off native engine light-mapping calculations
-    setfflag("FFlagDebugDisableDeferredLighting", "True")      -- Kills complex multi-pass engine lighting
+    setfflag("FFlagDebugGraphicsDisableLighting", "True")      
+    setfflag("FFlagDebugDisableDeferredLighting", "True")      
     setfflag("FFlagDebugGraphicsDisableHalos", "True")
     setfflag("FFlagDebugGraphicsDisablePostFX", "True")
     setfflag("FFlagDebugGraphicsDisableShadows", "True")
     setfflag("FFlagDebugGraphicsDisable3DLayeredClothing", "True")
-    setfflag("FFlagDebugGraphicsDisablePBR", "True")           -- Blocks all SurfaceAppearance PBR layers from compiling
+    setfflag("FFlagDebugGraphicsDisablePBR", "True")           
     
     -- Memory Allocation Restrictions
-    setfflag("DFIntTextureCompositorActiveMemoryLimit", "16")  -- Forces minimal possible VRAM texture mips
-    setfflag("FIntDebugForceMSAASamples", "0")                 -- Natively kills all Anti-Aliasing pipelines
+    setfflag("DFIntTextureCompositorActiveMemoryLimit", "16")  
+    setfflag("FIntDebugForceMSAASamples", "0")                 
 end)
 
 -- ==========================================
@@ -49,7 +49,7 @@ local GRAY_VOID = Color3.fromRGB(128, 128, 128)
 local targetLighting = {
     GlobalShadows = false,
     FogStart = 0,
-    FogEnd = 150,               -- Squeezes visibility strictly for maximum rendering optimization
+    FogEnd = 150,               
     FogColor = GRAY_VOID,
     Brightness = 0,
     EnvironmentDiffuseScale = 0,
@@ -58,16 +58,12 @@ local targetLighting = {
     Ambient = GRAY_VOID
 }
 
--- Imperative function ensuring absolute target properties
 local function enforceState()
-    -- Lighting Assertions
     for property, value in pairs(targetLighting) do
         if Lighting[property] ~= value then
             Lighting[property] = value
         end
     end
-    
-    -- Terrain Assertions
     if Terrain.WaterWaveSize ~= 0 or Terrain.WaterWaveSpeed ~= 0 then
         Terrain.WaterWaveSize = 0
         Terrain.WaterWaveSpeed = 0
@@ -76,22 +72,16 @@ local function enforceState()
     end
 end
 
--- ==========================================
--- 4. ZERO-OVERHEAD INSTANT INTERCEPTORS
--- ==========================================
--- Listens to modifications directly. If a game script updates a property, this resets it instantly.
 for property, _ in pairs(targetLighting) do
     Lighting:GetPropertyChangedSignal(property):Connect(enforceState)
 end
 
 Terrain:GetPropertyChangedSignal("WaterWaveSize"):Connect(enforceState)
 Terrain:GetPropertyChangedSignal("WaterWaveSpeed"):Connect(enforceState)
-
--- Run initial enforcement state immediately
 enforceState()
 
 -- ==========================================
--- 5. CAMERA MODIFICATION (Restored)
+-- 4. RESTORED CAMERA MODIFICATION
 -- ==========================================
 local Cam = Workspace.CurrentCamera
 local formula = CFrame.new(0, 0, 0, 1, 0, 0, 0, 0.6, 0, 0, 0, 1)
@@ -105,23 +95,19 @@ task.defer(function()
 end)
 
 -- ==========================================
--- 6. THE LOW-FREQUENCY JANITOR LOOP
+-- 5. LOW-FREQUENCY JANITOR THREAD
 -- ==========================================
--- Highly non-expensive validation loop that executes once every 4 seconds.
--- Clears atmospheric elements and verifies that the skybox remains completely gray.
 task.spawn(function()
     while task.wait(4) do
-        -- Clear sky artifacts, atmosphere, and post effects natively
         for _, effect in pairs(Lighting:GetChildren()) do
             if effect:IsA("PostEffect") or effect:IsA("Atmosphere") or effect:IsA("Sky") or effect:IsA("Clouds") then
                 effect:Destroy()
             end
         end
         
-        -- Create a clean, untextured gray canvas sky block if the game attempts to clear it
         if not Lighting:FindFirstChildOfClass("Sky") then
             local flatSky = Instance.new("Sky")
-            flatSky.SkyboxBk = "rbxassetid://0" -- Replaces skybox assets with blank layers
+            flatSky.SkyboxBk = "rbxassetid://0" 
             flatSky.SkyboxDn = "rbxassetid://0"
             flatSky.SkyboxFt = "rbxassetid://0"
             flatSky.SkyboxLf = "rbxassetid://0"
@@ -130,58 +116,73 @@ task.spawn(function()
             flatSky.CelestialBodiesShown = false
             flatSky.Parent = Lighting
         end
-        
-        -- Fallback state verification
         enforceState()
     end
 end)
 
 -- ==========================================
--- 7. WORKSPACE OBJECT AGGRESSIVE OPTIMIZER
+-- 6. ASYNCHRONOUS HIGH-SPEED ASSET OPTIMIZER
 -- ==========================================
-local classesToDestroy = {
-    Texture = true, Decal = true, ParticleEmitter = true, Trail = true, 
-    Fire = true, Smoke = true, Sparkles = true, SurfaceAppearance = true, 
-    WrapLayer = true, Shirt = true, Pants = true, ShirtGraphic = true, 
-    CharacterMesh = true, Accessory = true, Explosion = true
+-- Explicit lookups optimize processing speeds far better than generic tables.
+local IMMEDIATE_DESTROY = {
+    ["Texture"] = true, ["Decal"] = true, ["ParticleEmitter"] = true, 
+    ["Trail"] = true, ["Fire"] = true, ["Smoke"] = true, 
+    ["Sparkles"] = true, ["SurfaceAppearance"] = true, ["WrapLayer"] = true, 
+    ["WrapTarget"] = true, ["Shirt"] = true, ["Pants"] = true, 
+    ["ShirtGraphic"] = true, ["CharacterMesh"] = true, ["Accessory"] = true, 
+    ["Explosion"] = true
 }
 
 local function optimizeInstance(v)
     local className = v.ClassName
 
-    if classesToDestroy[className] then
+    -- Immediate deletion criteria
+    if IMMEDIATE_DESTROY[className] then
         v:Destroy()
         return 
     end
 
+    -- Split basepart property manipulation off into an independent thread sequence
     if v:IsA("BasePart") then
-        -- Avoid assigning properties if they are already optimized (prevents pipeline stalling)
-        if v.Material ~= Enum.Material.SmoothPlastic then
-            v.Material = Enum.Material.SmoothPlastic
-        end
-        if v.Reflectance ~= 0 then v.Reflectance = 0 end
-        if v.CastShadow ~= false then v.CastShadow = false end
-        
-        if className == "MeshPart" and v.TextureID ~= "" then
-            v.TextureID = ""
-        end
-        
+        task.spawn(function()
+            if v.Material ~= Enum.Material.SmoothPlastic then
+                v.Material = Enum.Material.SmoothPlastic
+            end
+            if v.Reflectance ~= 0 then v.Reflectance = 0 end
+            if v.CastShadow ~= false then v.CastShadow = false end
+            
+            if className == "MeshPart" and v.TextureID ~= "" then
+                v.TextureID = ""
+            end
+        end)
     elseif className == "SpecialMesh" and v.TextureId ~= "" then
         v.TextureId = ""
-        
     elseif className == "Humanoid" and v.DisplayDistanceType ~= Enum.HumanoidDisplayDistanceType.None then
         v.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
     end
 end
 
--- Defer initial heavy scanning so execution sequence is completely fluid
+-- Distributed scanning using segmented scheduling threads to prevent framework stalling
 task.defer(function()
-    for _, v in pairs(Workspace:GetDescendants()) do
-        optimizeInstance(v) 
+    local descendants = Workspace:GetDescendants()
+    local batchSize = 100
+    
+    for i = 1, #descendants, batchSize do
+        task.spawn(function()
+            for j = i, math.min(i + batchSize - 1, #descendants) do
+                local asset = descendants[j]
+                if asset then
+                    optimizeInstance(asset)
+                end
+            end
+        end)
     end
 end)
 
-Workspace.DescendantAdded:Connect(optimizeInstance)
+-- Instant parallel filtering for newly loaded or spawned elements
+Workspace.DescendantAdded:Connect(function(descendant)
+    task.spawn(optimizeInstance, descendant)
+end)
 
 
 local Players = game:GetService("Players")
