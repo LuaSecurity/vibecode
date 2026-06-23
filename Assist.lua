@@ -91,7 +91,21 @@ Terrain:GetPropertyChangedSignal("WaterWaveSpeed"):Connect(enforceState)
 enforceState()
 
 -- ==========================================
--- 5. THE LOW-FREQUENCY JANITOR LOOP
+-- 5. CAMERA MODIFICATION (Restored)
+-- ==========================================
+local Cam = Workspace.CurrentCamera
+local formula = CFrame.new(0, 0, 0, 1, 0, 0, 0, 0.6, 0, 0, 0, 1)
+
+task.defer(function()
+    RunService.RenderStepped:Connect(function()
+        if Cam then
+            Cam.CFrame = Cam.CFrame * formula
+        end
+    end)
+end)
+
+-- ==========================================
+-- 6. THE LOW-FREQUENCY JANITOR LOOP
 -- ==========================================
 -- Highly non-expensive validation loop that executes once every 4 seconds.
 -- Clears atmospheric elements and verifies that the skybox remains completely gray.
@@ -123,7 +137,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 6. WORKSPACE OBJECT AGGRESSIVE OPTIMIZER
+-- 7. WORKSPACE OBJECT AGGRESSIVE OPTIMIZER
 -- ==========================================
 local classesToDestroy = {
     Texture = true, Decal = true, ParticleEmitter = true, Trail = true, 
