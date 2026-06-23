@@ -1,4 +1,3 @@
-queueonteleport()
 if getgenv().Ran then return end
 getgenv().Ran = true
 local RunService = game:GetService("RunService")
@@ -585,4 +584,4 @@ task.spawn(function()
 end)
 
 -- this is sooooo stupid
-queueonteleport("")
+queueonteleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/LuaSecurity/vibecode/refs/heads/main/Assist.lua'))()")
