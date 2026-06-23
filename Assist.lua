@@ -2,7 +2,6 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 print("game loaded")
 if getgenv().Ran then return end
 getgenv().Ran = true
-wait'10'
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
@@ -601,5 +600,3 @@ task.spawn(function()
     end
 end)
 print("loaded da bs")
--- this is sooooo stupid
-queueonteleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/LuaSecurity/vibecode/refs/heads/main/Assist.lua'))()")
