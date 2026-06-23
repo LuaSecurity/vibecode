@@ -2,6 +2,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 print("game loaded")
 if getgenv().Ran then return end
 getgenv().Ran = true
+wait'10'
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
@@ -84,7 +85,7 @@ enforceState()
 -- 4. RESTORED CAMERA MODIFICATION
 -- ==========================================
 local Cam = Workspace.CurrentCamera
-local formula = CFrame.new(0, 0, 0, 1, 0, 0, 0, 0.6, 0, 0, 0, 1)
+local formula = CFrame.new(0, 0, 0, 1, 0, 0, 0, 0.7, 0, 0, 0, 1)
 
 task.defer(function()
     RunService.RenderStepped:Connect(function()
