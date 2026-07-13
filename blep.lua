@@ -14,6 +14,29 @@ if game.PlaceId == 124786371598438 then
     
     task.wait(1)
     
+    local chestsFolder = Workspace:FindFirstChild("Scripted") and Workspace.Scripted:FindFirstChild("Chests")
+    if chestsFolder then
+        for _, v in ipairs(chestsFolder:GetDescendants()) do
+            if v.Name == "Part" then
+                local prompt = v:FindFirstChild("ProximityPrompt")
+                if prompt and prompt.Enabled == true then
+                    local currentCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+                    local currentRoot = currentCharacter:WaitForChild("HumanoidRootPart")
+                    
+                    currentRoot.CFrame = v.CFrame
+                    task.wait(0.3)
+                    fireproximityprompt(prompt)
+                end
+                task.wait(0.3)
+            end
+        end
+    end
+    
+    local currentCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local currentRoot = currentCharacter:WaitForChild("HumanoidRootPart")
+    currentRoot.CFrame = CFrame.new(-22.195823669433594, 1191.672119140625, -729.8814697265625)
+    task.wait(0.5)
+
     local prompt = Workspace:WaitForChild("Scripted"):WaitForChild("VaultStart"):WaitForChild("ProximityPrompt")
     fireproximityprompt(prompt)
     
