@@ -2,8 +2,47 @@ local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
+
+local function serverHop()
+    local placeId = game.PlaceId
+    local serversUrl = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"
+    
+    local success, response = pcall(function()
+        return game:HttpGet(serversUrl)
+    end)
+    
+    if success and response then
+        local data = HttpService:JSONDecode(response)
+        if data and data.data then
+            local possibleServers = {}
+            for _, server in ipairs(data.data) do
+                if type(server) == "table" and server.id and server.playing and server.maxPlayers then
+                    if server.id ~= game.JobId and server.playing < server.maxPlayers and server.playing > 0 then
+                        table.insert(possibleServers, server.id)
+                    end
+                end
+            end
+            
+            if #possibleServers > 0 then
+                local targetServer = possibleServers[math.random(1, #possibleServers)]
+                while task.wait(1) do
+                    pcall(function()
+                        TeleportService:TeleportToPlaceInstance(placeId, targetServer, LocalPlayer)
+                    end)
+                end
+            end
+        end
+    end
+    
+    while task.wait(1) do
+        pcall(function()
+            TeleportService:Teleport(placeId, LocalPlayer)
+        end)
+    end
+end
 
 if game.PlaceId == 124786371598438 then
     repeat task.wait() until game:IsLoaded()
@@ -47,7 +86,15 @@ if game.PlaceId == 124786371598438 then
         loadstring(game:HttpGet("https://raw.githubusercontent.com/LuaSecurity/vibecode/refs/heads/main/blep.lua"))()
     ]])
     
-    TeleportService:Teleport(138381251771774, LocalPlayer)
+    local targetPlace = 138381251771774
+    task.spawn(function()
+        while task.wait(1.5) do
+            pcall(function()
+                TeleportService:Teleport(targetPlace, LocalPlayer)
+            end)
+        end
+    end)
+    
 else
     local targetTouchPart = nil
     local portals = {}
@@ -93,9 +140,21 @@ else
         ]])
 
         local Event = ReplicatedStorage:WaitForChild("VerdantRemotes"):WaitForChild("VDT_Portal.CreateSetup")
-        Event:FireServer({
-            Difficulty = "Hard",
-            MaxPlayers = 1
-        })
+        for i = 1, 5 do
+            pcall(function()
+                Event:FireServer({
+                    Difficulty = "Hard",
+                    MaxPlayers = 1
+                })
+            end)
+            task.wait(0.1)
+        end
+
+        task.spawn(function()
+            task.wait(15)
+            serverHop()
+        end)
+    else
+        serverHop()
     end
 end
